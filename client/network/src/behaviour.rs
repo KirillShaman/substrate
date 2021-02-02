@@ -44,6 +44,7 @@ use std::{
 
 pub use crate::request_responses::{
 	ResponseFailure, InboundFailure, RequestFailure, OutboundFailure, RequestId,
+	IfDisconnected
 };
 
 /// General behaviour of the network. Combines all protocols together.
@@ -243,8 +244,9 @@ impl<B: BlockT, H: ExHashT> Behaviour<B, H> {
 		protocol: &str,
 		request: Vec<u8>,
 		pending_response: oneshot::Sender<Result<Vec<u8>, RequestFailure>>,
+		connect: IfDisconnected,
 	) {
-		self.request_responses.send_request(target, protocol, request, pending_response)
+		self.request_responses.send_request(target, protocol, request, pending_response, connect)
 	}
 
 	/// Returns a shared reference to the user protocol.
@@ -316,7 +318,7 @@ Behaviour<B, H> {
 				}
 
 				self.request_responses.send_request(
-					&target, &self.block_request_protocol_name, buf, pending_response,
+					&target, &self.block_request_protocol_name, buf, pending_response, IfDisconnected::ImmediateError,
 				);
 			},
 			CustomMessageOutcome::NotificationStreamOpened { remote, protocol, roles, notifications_sink } => {
@@ -443,7 +445,35 @@ impl<B: BlockT, H: ExHashT> NetworkBehaviourEventProcess<DiscoveryOut>
 }
 
 impl<B: BlockT, H: ExHashT> Behaviour<B, H> {
+<<<<<<< HEAD
 	fn poll<TEv>(&mut self, _: &mut Context, _: &mut impl PollParameters) -> Poll<NetworkBehaviourAction<TEv, BehaviourOut<B>>> {
+=======
+	fn poll<TEv>(
+		&mut self,
+		cx: &mut Context,
+		_: &mut impl PollParameters,
+	) -> Poll<NetworkBehaviourAction<TEv, BehaviourOut<B>>> {
+		use light_client_requests::sender::OutEvent;
+		while let Poll::Ready(Some(event)) =
+			self.light_client_request_sender.poll_next_unpin(cx)
+		{
+			match event {
+				OutEvent::SendRequest {
+					target,
+					request,
+					pending_response,
+					protocol_name,
+				} => self.request_responses.send_request(
+					&target,
+					&protocol_name,
+					request,
+					pending_response,
+					IfDisconnected::ImmediateError,
+				),
+			}
+		}
+
+>>>>>>> master
 		if let Some(event) = self.events.pop_front() {
 			return Poll::Ready(NetworkBehaviourAction::GenerateEvent(event))
 		}
