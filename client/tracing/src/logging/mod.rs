@@ -132,14 +132,14 @@ where
 
 	let max_level_hint = Layer::<FmtSubscriber>::max_level_hint(&env_filter);
 
-	let max_level = match max_level_hint {
+	let max_level = max_level.unwrap_or_else(|| match max_level_hint {
 		Some(tracing_subscriber::filter::LevelFilter::INFO) | None => log::LevelFilter::Info,
 		Some(tracing_subscriber::filter::LevelFilter::TRACE) => log::LevelFilter::Trace,
 		Some(tracing_subscriber::filter::LevelFilter::WARN) => log::LevelFilter::Warn,
 		Some(tracing_subscriber::filter::LevelFilter::ERROR) => log::LevelFilter::Error,
 		Some(tracing_subscriber::filter::LevelFilter::DEBUG) => log::LevelFilter::Debug,
 		Some(tracing_subscriber::filter::LevelFilter::OFF) => log::LevelFilter::Off,
-	};
+	});
 
 	tracing_log::LogTracer::builder()
 		.with_max_level(max_level)
